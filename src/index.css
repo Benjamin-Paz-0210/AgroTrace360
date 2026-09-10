@@ -1,0 +1,88 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Outfit", "Segoe UI", sans-serif;
+  --font-serif: "Fraunces", Georgia, serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  max-width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: #08110c;
+  color: #f5f1ea;
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  touch-action: manipulation;
+}
+
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: 16px;
+  }
+}
+
+.leaflet-container {
+  background: #0b1711;
+  font-family: var(--font-sans);
+}
+
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip {
+  background: #111827;
+  color: #e7e5e4;
+  border-radius: 12px;
+}
+
+@media print {
+  @page {
+    size: 13.333in 7.5in;
+    margin: 0;
+  }
+
+  html,
+  body,
+  #root {
+    background: #1a120c !important;
+    color: #f5f1ea !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-slide {
+    width: 13.333in;
+    height: 7.5in;
+    overflow: hidden;
+    break-after: page;
+    break-inside: avoid;
+  }
+
+  .print-slide:last-child {
+    break-after: auto;
+  }
+
+  .print-slide > div {
+    height: 100% !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+}

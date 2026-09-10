@@ -1,0 +1,18 @@
+{
+  "name": "AgroTrace 360",
+  "short_name": "AgroTrace",
+  "description": "Pasaporte digital de trazabilidad e inocuidad para cacao de exportación",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#08110c",
+  "theme_color": "#08110c",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
