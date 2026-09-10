@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
-import { Camera, Loader, ScanSearch, Trash2 } from "lucide-react";
+import { Camera, Loader, ScanSearch } from "lucide-react";
 import { useRef, useState } from "react";
 import { api } from "../api/client";
 import { AppShell } from "../components/AppShell";
 import { Banner } from "../components/Banner";
+import { FotoViewer, FotosLoteGrid } from "../components/FotoViewer";
+import { HallazgoPanel } from "../components/HallazgoPanel";
 import { CULTIVOS, type CultivoId, type HallazgoIa } from "../data/agronomiaCampo";
 import { useLotes } from "../hooks/useLotes";
 import { useAuth } from "../state/AuthContext";
@@ -22,6 +24,7 @@ export function CamaraPage() {
   const [error, setError] = useState("");
   const [guardada, setGuardada] = useState(false);
   const [borrando, setBorrando] = useState<string | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
 
   async function onFile(file: File | undefined) {
     if (!file || !lote) return;
@@ -85,8 +88,6 @@ export function CamaraPage() {
       setBorrando(null);
     }
   }
-
-  const sinMatch = hallazgo?.match === "ninguno";
 
   return (
     <AppShell
@@ -186,92 +187,36 @@ export function CamaraPage() {
             </p>
           ) : null}
 
-          {hallazgo ? (
-            <div className="space-y-4">
-              <p
-                className={`inline-flex rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide ${
-                  sinMatch
-                    ? "bg-stone-700 text-stone-200"
-                    : hallazgo.tipo === "plaga"
-                      ? "bg-red-500/20 text-red-200"
-                      : hallazgo.tipo === "sano"
-                        ? "bg-emerald-500/20 text-emerald-200"
-                        : "bg-amber-500/20 text-amber-200"
-                }`}
-              >
-                {sinMatch ? "Sin coincidencia" : hallazgo.tipo}
-              </p>
-              <div>
-                <p className="font-serif text-3xl text-white">{hallazgo.enfermedad}</p>
-                {hallazgo.nombreCientifico ? (
-                  <p className="text-xs italic text-stone-500">{hallazgo.nombreCientifico}</p>
-                ) : null}
-                <p className="mt-1 text-sm text-emerald-300">
-                  {sinMatch
-                    ? "Ninguna ficha superó el umbral de parecido"
-                    : `Parecido ${hallazgo.similitud ?? hallazgo.confianzaEnfermedad}%`}
-                </p>
-              </div>
-              {hallazgo.fotoCatalogo ? (
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-stone-500">
-                    Ficha del catálogo con la que coincidió
-                  </p>
-                  <img
-                    src={hallazgo.fotoCatalogo}
-                    alt="Referencia"
-                    className="mt-2 h-32 w-full rounded-xl object-cover"
-                  />
-                </div>
-              ) : null}
-              <div className="rounded-xl bg-black/30 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">
-                  Causa
-                </p>
-                <p className="mt-1 text-sm text-stone-200">{hallazgo.causa}</p>
-              </div>
-              <div className="rounded-xl border border-emerald-500/20 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-                  Tratamiento
-                </p>
-                <p className="mt-2 text-sm text-stone-300">{hallazgo.tratamiento}</p>
-                <p className="mt-2 text-sm text-amber-200">{hallazgo.aviso}</p>
-              </div>
-              {guardada ? (
-                <p className="rounded-full bg-emerald-500/15 px-4 py-2 text-center text-sm text-emerald-200">
-                  Guardada en el lote. El acopio la ve con causa y tratamiento.
-                </p>
-              ) : null}
-            </div>
+          {hallazgo ? <HallazgoPanel hallazgo={hallazgo} /> : null}
+          {guardada ? (
+            <p className="mt-4 rounded-full bg-emerald-500/15 px-4 py-2 text-center text-sm text-emerald-200">
+              Guardada en el lote. El acopio la ve con causa y tratamiento.
+            </p>
           ) : null}
         </section>
       </div>
 
       {lote?.fotos?.length ? (
-        <section className="mt-8">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">
-            Guardadas en este lote
-          </h3>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {lote.fotos.map((foto) => (
-              <figure key={foto.id} className="overflow-hidden rounded-2xl border border-white/8">
-                <img src={foto.url} alt={foto.enfermedad} className="h-28 w-full object-cover" />
-                <figcaption className="flex items-start justify-between gap-2 p-2">
-                  <span className="text-[11px] text-stone-400">{foto.enfermedad}</span>
-                  <button
-                    type="button"
-                    disabled={borrando === foto.id}
-                    onClick={() => void borrarFoto(foto.id)}
-                    className="inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-stone-400 hover:border-red-400/50 hover:text-red-200 disabled:opacity-40"
-                    aria-label="Borrar foto"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
+        <>
+          <FotosLoteGrid
+            fotos={lote.fotos}
+            onAbrir={setVista}
+            onBorrar={(id) => void borrarFoto(id)}
+            borrando={borrando}
+            galeriaTo="/agricultor/galeria"
+          />
+          {vista ? (
+            <FotoViewer
+              key={vista}
+              fotos={lote.fotos}
+              inicialId={vista}
+              onClose={() => setVista(null)}
+              onBorrar={(id) => void borrarFoto(id)}
+              borrando={borrando}
+              galeriaTo="/agricultor/galeria"
+            />
+          ) : null}
+        </>
       ) : null}
     </AppShell>
   );

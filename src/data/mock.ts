@@ -63,6 +63,11 @@ export type FotoCampo = {
   createdAt: string;
   tipo?: string;
   causa?: string;
+  aviso?: string;
+  nombreCientifico?: string;
+  match?: string | null;
+  similitud?: number;
+  fotoCatalogo?: string | null;
   productor?: string;
   variedad?: string;
 };

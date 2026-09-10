@@ -6,6 +6,7 @@ import { AppShell, SemaforoPill } from "../components/AppShell";
 import { BitacoraTimeline } from "../components/BitacoraTimeline";
 import { useFotosAcopio, useLotes, useRanking } from "../hooks/useLotes";
 import { Banner } from "../components/Banner";
+import { FotoViewer } from "../components/FotoViewer";
 import { useNotice } from "../state/NoticeContext";
 
 export function AcopioPage() {
@@ -137,6 +138,7 @@ export function AcopioFotosPage() {
   const { confirmar, toast } = useNotice();
   const { fotos, loading, reload } = useFotosAcopio();
   const [borrando, setBorrando] = useState<string | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
 
   async function borrarFoto(loteId: string, fotoId: string) {
     const ok = await confirmar({
@@ -182,12 +184,20 @@ export function AcopioFotosPage() {
               key={foto.id}
               className="overflow-hidden rounded-3xl border border-white/8 bg-white/3"
             >
-              <img src={foto.url} alt={foto.enfermedad} className="h-48 w-full object-cover" />
+              <button type="button" onClick={() => setVista(foto.id)} className="block w-full">
+                <img src={foto.url} alt={foto.enfermedad} className="h-48 w-full object-cover" />
+              </button>
               <div className="p-4">
                 <p className="text-xs text-emerald-400">
                   {foto.productor} · {foto.variedad}
                 </p>
-                <h3 className="mt-1 font-medium text-white">{foto.enfermedad}</h3>
+                <button
+                  type="button"
+                  onClick={() => setVista(foto.id)}
+                  className="mt-1 text-left font-medium text-white hover:underline"
+                >
+                  {foto.enfermedad}
+                </button>
                 {foto.causa ? <p className="mt-2 text-sm text-stone-400">{foto.causa}</p> : null}
                 <p className="mt-2 text-sm text-stone-400">{foto.tratamiento}</p>
                 <button
@@ -204,6 +214,19 @@ export function AcopioFotosPage() {
           ))}
         </div>
       )}
+      {vista ? (
+        <FotoViewer
+          key={vista}
+          fotos={fotos}
+          inicialId={vista}
+          onClose={() => setVista(null)}
+          onBorrar={(id) => {
+            const f = fotos.find((x) => x.id === id);
+            if (f) void borrarFoto(f.loteId, f.id);
+          }}
+          borrando={borrando}
+        />
+      ) : null}
     </AppShell>
   );
 }

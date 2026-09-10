@@ -1,10 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import { AppShell, SemaforoPill } from "../components/AppShell";
 import { Banner } from "../components/Banner";
 import { BitacoraTimeline } from "../components/BitacoraTimeline";
+import { FotoViewer, FotosLoteGrid } from "../components/FotoViewer";
 import { ProcessStepper } from "../components/ProcessStepper";
 import { TIPO_LABEL, type BitacoraTipo } from "../data/mock";
 import { DIAS_SIN_FOTO } from "../data/agronomiaCampo";
@@ -24,6 +24,7 @@ export function AgricultorPage() {
   const [nota, setNota] = useState("");
   const [saving, setSaving] = useState(false);
   const [borrando, setBorrando] = useState<string | null>(null);
+  const [vista, setVista] = useState<string | null>(null);
 
   async function borrarFoto(fotoId: string) {
     if (!lote) return;
@@ -165,30 +166,26 @@ export function AgricultorPage() {
       </Banner>
 
       {lote.fotos?.length ? (
-        <section className="mt-8">
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-[0.16em] text-stone-500">
-            Fotos guardadas en tu lote
-          </h3>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {lote.fotos.map((foto) => (
-              <figure key={foto.id} className="overflow-hidden rounded-2xl border border-white/8">
-                <img src={foto.url} alt={foto.enfermedad} className="h-28 w-full object-cover" />
-                <figcaption className="flex items-start justify-between gap-2 p-2">
-                  <span className="text-[11px] text-stone-400">{foto.enfermedad}</span>
-                  <button
-                    type="button"
-                    disabled={borrando === foto.id}
-                    onClick={() => void borrarFoto(foto.id)}
-                    className="inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-stone-400 hover:border-red-400/50 hover:text-red-200 disabled:opacity-40"
-                    aria-label="Borrar foto"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
-        </section>
+        <>
+          <FotosLoteGrid
+            fotos={lote.fotos}
+            onAbrir={setVista}
+            onBorrar={(id) => void borrarFoto(id)}
+            borrando={borrando}
+            galeriaTo="/agricultor/galeria"
+          />
+          {vista ? (
+            <FotoViewer
+              key={vista}
+              fotos={lote.fotos}
+              inicialId={vista}
+              onClose={() => setVista(null)}
+              onBorrar={(id) => void borrarFoto(id)}
+              borrando={borrando}
+              galeriaTo="/agricultor/galeria"
+            />
+          ) : null}
+        </>
       ) : null}
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">

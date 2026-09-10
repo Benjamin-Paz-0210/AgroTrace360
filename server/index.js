@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { all, get, initSchema, run } from "./db.js";
 import { diagnosticarFoto } from "./ia.js";
+import { persistirHallazgo, reanalizarPendientes, refrescarRespuestasCatalogo } from "./fotos.js";
 import { catalogoDir, listarEnfermedades } from "./catalogo.js";
 import { listarProductos } from "./org.js";
 import { climaTingo } from "./clima.js";
@@ -79,6 +80,11 @@ function mapFoto(f, extra = {}) {
     tratamiento: f.tratamiento,
     tipo: f.tipo,
     causa: f.causa,
+    aviso: f.aviso || "",
+    nombreCientifico: f.nombre_cientifico || "",
+    match: f.match || null,
+    similitud: f.similitud ?? f.confianza_enfermedad ?? 0,
+    fotoCatalogo: f.catalogo_filename ? `/uploads/catalogo/${f.catalogo_filename}` : null,
     createdAt: f.created_at,
     ...extra,
   };
@@ -288,6 +294,7 @@ app.post(
       hallazgo.causa || null,
     ],
     );
+    await persistirHallazgo(id, hallazgo);
     const nuevaCalidad =
       hallazgo.match === "ninguno"
         ? lote.calidad_export
@@ -344,9 +351,33 @@ app.delete(
   }),
 );
 
-app.get("/api/health", (_req, res) => {
-  res.json({ ok: true, db: process.env.PGDATABASE, fichas: true });
-});
+app.post(
+  "/api/lotes/:id/fotos/actualizar-ia",
+  auth,
+  requireRole("agricultor", "acopio"),
+  wrap(async (req, res) => {
+    const lote = await get("SELECT * FROM lotes WHERE id = ?", [req.params.id]);
+    if (!lote) return res.status(404).json({ error: "Lote no existe" });
+    if (req.user.role === "agricultor" && lote.id !== req.user.lote_id) {
+      return res.status(403).json({ error: "Ese lote no es tuyo" });
+    }
+    if (req.user.role === "acopio" && lote.acopio_id !== req.user.acopio_id) {
+      return res.status(403).json({ error: "Ese lote no es de tu acopio" });
+    }
+    const r = await reanalizarPendientes(UPLOADS, lote.id);
+    const respuestas = await refrescarRespuestasCatalogo(lote.id);
+    const fotos = await all(
+      "SELECT * FROM fotos WHERE lote_id = ? ORDER BY created_at DESC",
+      [lote.id],
+    );
+    res.json({
+      pendientes: r.pendientes,
+      actualizadas: r.actualizadas.length,
+      respuestas,
+      fotos: fotos.map((f) => mapFoto(f)),
+    });
+  }),
+);
 
 app.get(
   "/api/catalogo/enfermedades",
@@ -401,6 +432,7 @@ app.post(
         hallazgo.causa || null,
       ],
     );
+    await persistirHallazgo(id, hallazgo);
     const nuevaCalidad =
       hallazgo.match === "ninguno"
         ? lote.calidad_export
@@ -689,6 +721,17 @@ app.use((err, _req, res, _next) => {
 });
 
 await initSchema();
+try {
+  const r = await reanalizarPendientes(UPLOADS);
+  const n = await refrescarRespuestasCatalogo();
+  if (r.actualizadas.length || n) {
+    console.log(
+      `IA catálogo: ${r.actualizadas.length} fotos sin match ahora coinciden, ${n} respuestas actualizadas`,
+    );
+  }
+} catch (err) {
+  console.error("No se pudieron actualizar fotos de lote con el catálogo:", err.message);
+}
 const server = app.listen(PORT, "0.0.0.0", () => {
   const db = process.env.DATABASE_URL
     ? "DATABASE_URL"

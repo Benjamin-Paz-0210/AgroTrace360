@@ -64,7 +64,12 @@ CREATE TABLE IF NOT EXISTS fotos (
   tratamiento TEXT,
   created_at TEXT,
   tipo TEXT,
-  causa TEXT
+  causa TEXT,
+  match TEXT,
+  similitud INTEGER,
+  aviso TEXT,
+  catalogo_filename TEXT,
+  nombre_cientifico TEXT
 );
 
 CREATE TABLE IF NOT EXISTS enfermedades (

@@ -3,6 +3,7 @@ import { RequireRole } from "./components/RequireRole";
 import { AcopioFotosPage, AcopioPage, AcopioProductorPage } from "./pages/AcopioPage";
 import { AgricultorPage } from "./pages/AgricultorPage";
 import { CamaraPage } from "./pages/CamaraPage";
+import { GaleriaPage } from "./pages/GaleriaPage";
 import { ExportadoraAcopioPage, ExportadoraHome, ExportadoraPage } from "./pages/ExportadoraPage";
 import { LandingPage } from "./pages/LandingPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -43,6 +44,14 @@ export default function App() {
             element={
               <RequireRole role="agricultor">
                 <CamaraPage />
+              </RequireRole>
+            }
+          />
+          <Route
+            path="/agricultor/galeria"
+            element={
+              <RequireRole role="agricultor">
+                <GaleriaPage />
               </RequireRole>
             }
           />
