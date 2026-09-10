@@ -7,6 +7,7 @@ import { BitacoraTimeline } from "../components/BitacoraTimeline";
 import { useFotosAcopio, useLotes, useRanking } from "../hooks/useLotes";
 import { Banner } from "../components/Banner";
 import { FotoViewer } from "../components/FotoViewer";
+import { ImgLote } from "../components/ImgLote";
 import { useNotice } from "../state/NoticeContext";
 
 export function AcopioPage() {
@@ -185,7 +186,7 @@ export function AcopioFotosPage() {
               className="overflow-hidden rounded-3xl border border-white/8 bg-white/3"
             >
               <button type="button" onClick={() => setVista(foto.id)} className="block w-full">
-                <img src={foto.url} alt={foto.enfermedad} className="h-48 w-full object-cover" />
+                <ImgLote src={foto.url} alt="" className="h-48 w-full object-cover" />
               </button>
               <div className="p-4">
                 <p className="text-xs text-emerald-400">

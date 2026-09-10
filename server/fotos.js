@@ -1,7 +1,7 @@
-import fs from "fs";
 import path from "path";
 import { all, get, run } from "./db.js";
 import { diagnosticarFoto } from "./ia.js";
+import { asegurarEnDisco, fotoCampos } from "./archivo.js";
 
 export function esSinMatch(foto) {
   const match = String(foto?.match || "");
@@ -41,14 +41,11 @@ export async function persistirHallazgo(fotoId, hallazgo) {
 }
 
 function archivoFoto(uploadsDir, filename) {
-  if (!filename) return null;
-  const archivo = path.join(uploadsDir, path.basename(String(filename)));
-  if (!archivo.startsWith(uploadsDir) || !fs.existsSync(archivo)) return null;
-  return archivo;
+  return asegurarEnDisco(uploadsDir, filename);
 }
 
 export async function reanalizarFoto(foto, uploadsDir) {
-  const archivo = archivoFoto(uploadsDir, foto.filename);
+  const archivo = await archivoFoto(uploadsDir, foto.filename);
   if (!archivo) return { cambio: false, hallazgo: null };
   const hallazgo = await diagnosticarFoto(foto.cultivo || "cacao", archivo);
   const ahoraMatch = hallazgo.match !== "ninguno";
@@ -63,8 +60,8 @@ export async function reanalizarFoto(foto, uploadsDir) {
 
 export async function reanalizarPendientes(uploadsDir, loteId) {
   const rows = loteId
-    ? await all("SELECT * FROM fotos WHERE lote_id = ?", [loteId])
-    : await all("SELECT * FROM fotos");
+    ? await all(`SELECT ${fotoCampos()} FROM fotos WHERE lote_id = ?`, [loteId])
+    : await all(`SELECT ${fotoCampos()} FROM fotos`);
   const pendientes = rows.filter(esSinMatch);
   const actualizadas = [];
   for (const foto of pendientes) {
@@ -79,10 +76,10 @@ export async function reanalizarPendientes(uploadsDir, loteId) {
 export async function refrescarRespuestasCatalogo(loteId) {
   const rows = loteId
     ? await all(
-        "SELECT * FROM fotos WHERE lote_id = ? AND catalogo_filename IS NOT NULL",
+        `SELECT ${fotoCampos()} FROM fotos WHERE lote_id = ? AND catalogo_filename IS NOT NULL`,
         [loteId],
       )
-    : await all("SELECT * FROM fotos WHERE catalogo_filename IS NOT NULL");
+    : await all(`SELECT ${fotoCampos()} FROM fotos WHERE catalogo_filename IS NOT NULL`);
   let n = 0;
   for (const foto of rows) {
     const ficha = await get("SELECT * FROM enfermedades WHERE filename = ?", [

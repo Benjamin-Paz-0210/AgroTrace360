@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS fotos (
   similitud INTEGER,
   aviso TEXT,
   catalogo_filename TEXT,
-  nombre_cientifico TEXT
+  nombre_cientifico TEXT,
+  archivo BYTEA
 );
 
 CREATE TABLE IF NOT EXISTS enfermedades (

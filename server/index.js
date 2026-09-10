@@ -8,6 +8,14 @@ import { fileURLToPath } from "url";
 import { all, get, initSchema, run } from "./db.js";
 import { diagnosticarFoto } from "./ia.js";
 import { persistirHallazgo, reanalizarPendientes, refrescarRespuestasCatalogo } from "./fotos.js";
+import {
+  compactarFoto,
+  fotoCampos,
+  guardarBytes,
+  hidratarArchivos,
+  leerBytes,
+  rutaSegura,
+} from "./archivo.js";
 import { catalogoDir, listarEnfermedades } from "./catalogo.js";
 import { listarProductos } from "./org.js";
 import { climaTingo } from "./clima.js";
@@ -93,7 +101,7 @@ function mapFoto(f, extra = {}) {
 async function lotePublico(row) {
   if (!row) return null;
   const fotos = await all(
-    "SELECT * FROM fotos WHERE lote_id = ? ORDER BY created_at DESC",
+    `SELECT ${fotoCampos()} FROM fotos WHERE lote_id = ? ORDER BY created_at DESC`,
     [row.id],
   );
   const bitacora = await all(
@@ -157,6 +165,20 @@ const upload = multer({
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: "8mb" }));
+
+app.get("/uploads/:file", wrap(async (req, res, next) => {
+  const name = path.basename(String(req.params.file || ""));
+  if (!name || name !== req.params.file) return next();
+  const disk = rutaSegura(UPLOADS, name);
+  if (disk && fs.existsSync(disk)) {
+    return res.sendFile(disk);
+  }
+  const buf = await leerBytes(name);
+  if (!buf) return next();
+  if (disk) fs.writeFileSync(disk, buf);
+  res.type("jpg").send(buf);
+}));
+
 app.use("/uploads", express.static(UPLOADS));
 
 app.get("/api/health", wrap(async (_req, res) => {
@@ -270,8 +292,9 @@ app.post(
       return res.status(403).json({ error: "Ese lote no es tuyo" });
     }
     if (!req.file) return res.status(400).json({ error: "Falta la foto" });
+    const packed = await compactarFoto(req.file.path);
     const cultivo = req.body.cultivo || lote.cultivo || "cacao";
-    const hallazgo = await diagnosticarFoto(cultivo, req.file.path);
+    const hallazgo = await diagnosticarFoto(cultivo, packed.path);
     const id = `f-${Date.now()}`;
     await run(
       `INSERT INTO fotos
@@ -281,7 +304,7 @@ app.post(
       id,
       lote.id,
       req.user.id,
-      req.file.filename,
+      packed.filename,
       cultivo,
       hallazgo.calidadPlantaPct,
       hallazgo.enfermedad,
@@ -295,6 +318,7 @@ app.post(
     ],
     );
     await persistirHallazgo(id, hallazgo);
+    await guardarBytes(id, packed.buffer);
     const nuevaCalidad =
       hallazgo.match === "ninguno"
         ? lote.calidad_export
@@ -317,7 +341,7 @@ app.post(
     ]);
     res.json({
       id,
-      url: `/uploads/${req.file.filename}`,
+      url: `/uploads/${packed.filename}`,
       hallazgo,
       calidadExportPct: nuevaCalidad,
     });
@@ -337,10 +361,10 @@ app.delete(
     if (req.user.role === "acopio" && lote.acopio_id !== req.user.acopio_id) {
       return res.status(403).json({ error: "Ese lote no es de tu acopio" });
     }
-    const foto = await get("SELECT * FROM fotos WHERE id = ? AND lote_id = ?", [
-      req.params.fotoId,
-      lote.id,
-    ]);
+    const foto = await get(
+      `SELECT ${fotoCampos()} FROM fotos WHERE id = ? AND lote_id = ?`,
+      [req.params.fotoId, lote.id],
+    );
     if (!foto) return res.status(404).json({ error: "Esa foto no está en el lote" });
     await run("DELETE FROM fotos WHERE id = ?", [foto.id]);
     const archivo = path.join(UPLOADS, path.basename(String(foto.filename || "")));
@@ -367,7 +391,7 @@ app.post(
     const r = await reanalizarPendientes(UPLOADS, lote.id);
     const respuestas = await refrescarRespuestasCatalogo(lote.id);
     const fotos = await all(
-      "SELECT * FROM fotos WHERE lote_id = ? ORDER BY created_at DESC",
+      `SELECT ${fotoCampos()} FROM fotos WHERE lote_id = ? ORDER BY created_at DESC`,
       [lote.id],
     );
     res.json({
@@ -409,7 +433,8 @@ app.post(
     const filename = `${Date.now()}-prueba-${ficha.filename}`;
     const dest = path.join(UPLOADS, filename);
     fs.copyFileSync(src, dest);
-    const hallazgo = await diagnosticarFoto(ficha.cultivo, dest);
+    const packed = await compactarFoto(dest);
+    const hallazgo = await diagnosticarFoto(ficha.cultivo, packed.path);
     const id = `f-${Date.now()}`;
     await run(
       `INSERT INTO fotos
@@ -419,7 +444,7 @@ app.post(
         id,
         lote.id,
         req.user.id,
-        filename,
+        packed.filename,
         ficha.cultivo,
         hallazgo.calidadPlantaPct,
         hallazgo.enfermedad,
@@ -433,6 +458,7 @@ app.post(
       ],
     );
     await persistirHallazgo(id, hallazgo);
+    await guardarBytes(id, packed.buffer);
     const nuevaCalidad =
       hallazgo.match === "ninguno"
         ? lote.calidad_export
@@ -455,7 +481,7 @@ app.post(
     ]);
     res.json({
       id,
-      url: `/uploads/${filename}`,
+      url: `/uploads/${packed.filename}`,
       hallazgo,
       calidadExportPct: nuevaCalidad,
     });
@@ -475,7 +501,10 @@ app.get(
     }
     const ranking = await Promise.all(
       lotes.map(async (lote) => {
-        const fotos = await all("SELECT * FROM fotos WHERE lote_id = ?", [lote.id]);
+        const fotos = await all(
+          `SELECT calidad_planta FROM fotos WHERE lote_id = ?`,
+          [lote.id],
+        );
         const ia =
           fotos.length > 0
             ? Math.round(
@@ -519,14 +548,14 @@ app.get(
     const fotos =
       req.user.role === "acopio"
         ? await all(
-            `SELECT f.*, l.productor, l.variedad
+            `SELECT ${fotoCampos("f")}, l.productor, l.variedad
              FROM fotos f JOIN lotes l ON l.id = f.lote_id
              WHERE l.acopio_id = ?
              ORDER BY f.created_at DESC`,
             [req.user.acopio_id],
           )
         : await all(
-            `SELECT f.*, l.productor, l.variedad
+            `SELECT ${fotoCampos("f")}, l.productor, l.variedad
              FROM fotos f JOIN lotes l ON l.id = f.lote_id
              ORDER BY f.created_at DESC`,
           );
@@ -722,6 +751,10 @@ app.use((err, _req, res, _next) => {
 
 await initSchema();
 try {
+  const h = await hidratarArchivos(UPLOADS);
+  if (h.restored || h.saved) {
+    console.log(`Fotos de lote: ${h.restored} restauradas del disco persistente, ${h.saved} guardadas`);
+  }
   const r = await reanalizarPendientes(UPLOADS);
   const n = await refrescarRespuestasCatalogo();
   if (r.actualizadas.length || n) {

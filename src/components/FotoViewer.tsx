@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, Images, Trash2, X } from "lucide-react";
 import type { FotoCampo } from "../data/mock";
 import { fotoToHallazgo } from "../lib/fotoIa";
 import { HallazgoPanel } from "./HallazgoPanel";
+import { ImgLote } from "./ImgLote";
 
 export function FotoViewer({
   fotos,
@@ -103,7 +104,7 @@ export function FotoViewer({
               touchX.current = null;
             }}
           >
-            <img src={foto.url} alt={foto.enfermedad} className="max-h-[52vh] w-full object-contain lg:max-h-[70vh]" />
+            <ImgLote src={foto.url} alt={foto.enfermedad} className="max-h-[52vh] w-full object-contain lg:max-h-[70vh]" />
             {fotos.length > 1 ? (
               <>
                 <button
@@ -155,7 +156,7 @@ export function FotoViewer({
                   idx === i ? "border-amber-300" : "border-white/10 opacity-70"
                 }`}
               >
-                <img src={item.url} alt="" className="h-full w-full object-cover" />
+                <ImgLote src={item.url} alt="" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -203,7 +204,7 @@ export function FotosLoteGrid({
               onClick={() => onAbrir(foto.id)}
               className="block w-full"
             >
-              <img src={foto.url} alt={foto.enfermedad} className="h-28 w-full object-cover" />
+              <ImgLote src={foto.url} alt="" className="h-28 w-full object-cover" />
             </button>
             <figcaption className="flex items-start justify-between gap-2 p-2">
               <button

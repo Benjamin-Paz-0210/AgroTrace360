@@ -5,6 +5,7 @@ import { api } from "../api/client";
 import { AppShell } from "../components/AppShell";
 import { Banner } from "../components/Banner";
 import { HallazgoPanel } from "../components/HallazgoPanel";
+import { ImgLote } from "../components/ImgLote";
 import type { FotoCampo } from "../data/mock";
 import { useLotes } from "../hooks/useLotes";
 import { fotoToHallazgo } from "../lib/fotoIa";
@@ -126,10 +127,10 @@ export function GaleriaPage() {
                 touchX.current = null;
               }}
             >
-              <img
+              <ImgLote
                 src={foto.url}
                 alt={foto.enfermedad}
-                className="max-h-[62vh] w-full object-contain"
+                className="max-h-[62vh] w-full min-h-64 object-contain"
               />
               {fotos.length > 1 ? (
                 <>
@@ -162,7 +163,7 @@ export function GaleriaPage() {
                     idx === i ? "border-amber-300" : "border-white/10 opacity-70"
                   }`}
                 >
-                  <img src={item.url} alt="" className="h-full w-full object-cover" />
+                  <ImgLote src={item.url} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>

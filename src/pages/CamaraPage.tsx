@@ -6,6 +6,7 @@ import { AppShell } from "../components/AppShell";
 import { Banner } from "../components/Banner";
 import { FotoViewer, FotosLoteGrid } from "../components/FotoViewer";
 import { HallazgoPanel } from "../components/HallazgoPanel";
+import { ImgLote } from "../components/ImgLote";
 import { CULTIVOS, type CultivoId, type HallazgoIa } from "../data/agronomiaCampo";
 import { useLotes } from "../hooks/useLotes";
 import { useAuth } from "../state/AuthContext";
@@ -149,7 +150,7 @@ export function CamaraPage() {
           />
 
           {preview ? (
-            <img
+            <ImgLote
               src={preview}
               alt="Foto de campo"
               className="mt-4 h-56 w-full rounded-2xl object-cover"
