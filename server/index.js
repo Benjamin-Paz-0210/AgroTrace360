@@ -317,6 +317,33 @@ app.post(
   }),
 );
 
+app.delete(
+  "/api/lotes/:id/fotos/:fotoId",
+  auth,
+  requireRole("agricultor", "acopio"),
+  wrap(async (req, res) => {
+    const lote = await get("SELECT * FROM lotes WHERE id = ?", [req.params.id]);
+    if (!lote) return res.status(404).json({ error: "Lote no existe" });
+    if (req.user.role === "agricultor" && lote.id !== req.user.lote_id) {
+      return res.status(403).json({ error: "Ese lote no es tuyo" });
+    }
+    if (req.user.role === "acopio" && lote.acopio_id !== req.user.acopio_id) {
+      return res.status(403).json({ error: "Ese lote no es de tu acopio" });
+    }
+    const foto = await get("SELECT * FROM fotos WHERE id = ? AND lote_id = ?", [
+      req.params.fotoId,
+      lote.id,
+    ]);
+    if (!foto) return res.status(404).json({ error: "Esa foto no está en el lote" });
+    await run("DELETE FROM fotos WHERE id = ?", [foto.id]);
+    const archivo = path.join(UPLOADS, path.basename(String(foto.filename || "")));
+    if (foto.filename && archivo.startsWith(UPLOADS) && fs.existsSync(archivo)) {
+      fs.unlinkSync(archivo);
+    }
+    res.json({ ok: true, id: foto.id });
+  }),
+);
+
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, db: process.env.PGDATABASE, fichas: true });
 });

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AppShell } from "../components/AppShell";
+import { Banner } from "../components/Banner";
 import {
   CULTIVOS,
   SENSORES_TINGO,
@@ -58,13 +59,13 @@ export function SueloPage() {
 
       <p className="mb-4 text-sm text-stone-400">{req.nota}</p>
       {cultivo === "maiz" ? (
-        <p className="mb-6 rounded-2xl border border-amber-500/25 bg-amber-950/25 p-4 text-sm text-amber-100">
+        <Banner tipo="info">
           Charla de maíz: zinc foliar en V4–V6, siembra con lluvia SENAMHI y
           surcos al Este. El calor de la tarde no llena grano.{" "}
           <Link to="/agricultor/guias" className="font-semibold underline-offset-4 hover:underline">
             Abrir clima y foliar →
           </Link>
-        </p>
+        </Banner>
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">

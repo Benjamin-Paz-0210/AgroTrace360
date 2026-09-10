@@ -1,24 +1,55 @@
 import { useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import { AppShell, SemaforoPill } from "../components/AppShell";
+import { Banner } from "../components/Banner";
 import { BitacoraTimeline } from "../components/BitacoraTimeline";
 import { ProcessStepper } from "../components/ProcessStepper";
 import { TIPO_LABEL, type BitacoraTipo } from "../data/mock";
 import { DIAS_SIN_FOTO } from "../data/agronomiaCampo";
 import { useLotes } from "../hooks/useLotes";
 import { useAuth } from "../state/AuthContext";
+import { useNotice } from "../state/NoticeContext";
 
 const TIPOS = Object.keys(TIPO_LABEL) as BitacoraTipo[];
 
 export function AgricultorPage() {
   const { user } = useAuth();
+  const { confirmar, toast } = useNotice();
   const { lotes, loading, error, reload } = useLotes();
   const lote = lotes[0];
   const [tipo, setTipo] = useState<BitacoraTipo>("nutricion");
   const [titulo, setTitulo] = useState("");
   const [nota, setNota] = useState("");
   const [saving, setSaving] = useState(false);
+  const [borrando, setBorrando] = useState<string | null>(null);
+
+  async function borrarFoto(fotoId: string) {
+    if (!lote) return;
+    const ok = await confirmar({
+      titulo: "Borrar foto del lote",
+      texto: "Se quita de la bitácora y el acopio ya no la verá. El catálogo no se toca.",
+      ok: "Borrar",
+      cancelar: "Conservar",
+      peligro: true,
+    });
+    if (!ok) return;
+    setBorrando(fotoId);
+    try {
+      await api(`/api/lotes/${lote.id}/fotos/${fotoId}`, { method: "DELETE" });
+      reload();
+      toast({ tipo: "ok", titulo: "Foto borrada", texto: "Ya no está en el lote." });
+    } catch (err) {
+      toast({
+        tipo: "error",
+        titulo: "No se pudo borrar",
+        texto: err instanceof Error ? err.message : "Inténtalo de nuevo.",
+      });
+    } finally {
+      setBorrando(null);
+    }
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
@@ -36,6 +67,13 @@ export function AgricultorPage() {
       setTitulo("");
       setNota("");
       reload();
+      toast({ tipo: "ok", titulo: "Bitácora actualizada", texto: "El acopio ya puede ver este registro." });
+    } catch (err) {
+      toast({
+        tipo: "error",
+        titulo: "No se pudo guardar",
+        texto: err instanceof Error ? err.message : "Inténtalo de nuevo.",
+      });
     } finally {
       setSaving(false);
     }
@@ -52,7 +90,7 @@ export function AgricultorPage() {
   if (error || !lote) {
     return (
       <AppShell eyebrow="Rol agricultor" title="Mi bitácora de parcela">
-        <p className="text-amber-200">{error || "No hay lote asignado a esta cuenta."}</p>
+        <Banner tipo="error">{error || "No hay lote asignado a esta cuenta."}</Banner>
       </AppShell>
     );
   }
@@ -92,39 +130,39 @@ export function AgricultorPage() {
       </h3>
       <ProcessStepper pasos={lote.pasos} />
 
-      <div className="mt-6 rounded-2xl border border-amber-500/25 bg-amber-950/25 p-5">
-        <p className="text-sm text-amber-100">
+      <Banner tipo="info" className="mt-6">
+        <p>
           ¿Qué pasa si no registras la maleza? Nada se escribe, y se puede
           perder hasta el 70%. Por eso el sistema no espera el nombre: exige
           foto. Llevas {DIAS_SIN_FOTO} días sin monitoreo visual.
         </p>
-        <Link
-          to="/agricultor/camara"
-          className="mt-3 inline-flex text-sm font-semibold text-amber-200 underline-offset-4 hover:underline"
-        >
-          Abrir cámara IA →
-        </Link>
-        <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-        <Link
-          to="/agricultor/suelo"
-          className="inline-flex text-sm font-semibold text-emerald-300 underline-offset-4 hover:underline"
-        >
-          Ver sensores de suelo →
-        </Link>
-        <Link
-          to="/agricultor/guias"
-          className="inline-flex text-sm font-semibold text-sky-200 underline-offset-4 hover:underline"
-        >
-          Clima SENAMHI y foliar →
-        </Link>
-        <Link
-          to="/agricultor/densidad"
-          className="inline-flex text-sm font-semibold text-white underline-offset-4 hover:underline"
-        >
-          Densidad pl/ha →
-        </Link>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          <Link
+            to="/agricultor/camara"
+            className="font-semibold underline-offset-4 hover:underline"
+          >
+            Abrir cámara IA →
+          </Link>
+          <Link
+            to="/agricultor/suelo"
+            className="font-semibold text-emerald-300 underline-offset-4 hover:underline"
+          >
+            Ver sensores de suelo →
+          </Link>
+          <Link
+            to="/agricultor/guias"
+            className="font-semibold text-sky-200 underline-offset-4 hover:underline"
+          >
+            Clima SENAMHI y foliar →
+          </Link>
+          <Link
+            to="/agricultor/densidad"
+            className="font-semibold text-white underline-offset-4 hover:underline"
+          >
+            Densidad pl/ha →
+          </Link>
         </div>
-      </div>
+      </Banner>
 
       {lote.fotos?.length ? (
         <section className="mt-8">
@@ -132,11 +170,20 @@ export function AgricultorPage() {
             Fotos guardadas en tu lote
           </h3>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-            {lote.fotos.slice(0, 8).map((foto) => (
+            {lote.fotos.map((foto) => (
               <figure key={foto.id} className="overflow-hidden rounded-2xl border border-white/8">
                 <img src={foto.url} alt={foto.enfermedad} className="h-28 w-full object-cover" />
-                <figcaption className="p-2 text-[11px] text-stone-400">
-                  {foto.enfermedad}
+                <figcaption className="flex items-start justify-between gap-2 p-2">
+                  <span className="text-[11px] text-stone-400">{foto.enfermedad}</span>
+                  <button
+                    type="button"
+                    disabled={borrando === foto.id}
+                    onClick={() => void borrarFoto(foto.id)}
+                    className="inline-flex min-h-8 min-w-8 shrink-0 items-center justify-center rounded-full border border-white/15 text-stone-400 hover:border-red-400/50 hover:text-red-200 disabled:opacity-40"
+                    aria-label="Borrar foto"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 </figcaption>
               </figure>
             ))}

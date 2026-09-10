@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { AppShell } from "../components/AppShell";
+import { Banner } from "../components/Banner";
 import { Brand } from "../components/Brand";
 import { useAuth } from "../state/AuthContext";
 
@@ -33,7 +34,7 @@ export function MarketplacePage() {
   const [acopioNombre, setAcopioNombre] = useState(user?.acopioNombre || "");
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categoria, setCategoria] = useState("");
-  const [msg, setMsg] = useState("");
+  const [msg, setMsg] = useState<{ tipo: "ok" | "error" | "info"; texto: string } | null>(null);
   const [alta, setAlta] = useState(false);
   const [nombre, setNombre] = useState(user?.nombre || "");
   const [acopioId, setAcopioId] = useState(user?.acopioId || "");
@@ -46,7 +47,7 @@ export function MarketplacePage() {
         setSocio(data.socio);
         setProductos(data.productos);
       })
-      .catch((err: Error) => setMsg(err.message));
+      .catch((err: Error) => setMsg({ tipo: "error", texto: err.message }));
   }
 
   useEffect(() => {
@@ -56,7 +57,7 @@ export function MarketplacePage() {
 
   async function verificar(event: FormEvent) {
     event.preventDefault();
-    setMsg("");
+    setMsg(null);
     try {
       const data = await api<{
         socio: boolean;
@@ -71,20 +72,29 @@ export function MarketplacePage() {
       setAlta(!data.socio);
       if (data.socio) {
         setAcopioNombre(data.acopioNombre || "");
-        setMsg(`Socio verificado · ${data.nombre} · ${data.acopioNombre}`);
+        setMsg({
+          tipo: "ok",
+          texto: `Socio verificado · ${data.nombre} · ${data.acopioNombre}`,
+        });
         cargar(dni);
       } else {
-        setMsg("Este DNI no está en el padrón. Puedes hacerte socio del acopio.");
+        setMsg({
+          tipo: "info",
+          texto: "Este DNI no está en el padrón. Puedes hacerte socio del acopio.",
+        });
         cargar();
       }
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : "No se pudo verificar");
+      setMsg({
+        tipo: "error",
+        texto: err instanceof Error ? err.message : "No se pudo verificar",
+      });
     }
   }
 
   async function hacerseSocio(event: FormEvent) {
     event.preventDefault();
-    setMsg("");
+    setMsg(null);
     try {
       const data = await api<{
         socio: boolean;
@@ -97,10 +107,16 @@ export function MarketplacePage() {
       setSocio(true);
       setAlta(false);
       setAcopioNombre(data.acopioNombre || "");
-      setMsg(`Ya eres socio de ${data.acopioNombre}. Precios de cooperativa activados.`);
+      setMsg({
+        tipo: "ok",
+        texto: `Ya eres socio de ${data.acopioNombre}. Precios de cooperativa activados.`,
+      });
       cargar(dni);
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : "No se pudo registrar");
+      setMsg({
+        tipo: "error",
+        texto: err instanceof Error ? err.message : "No se pudo registrar",
+      });
     }
   }
 
@@ -195,7 +211,7 @@ export function MarketplacePage() {
         </form>
       ) : null}
 
-      {msg ? <p className="mb-6 text-sm text-amber-100">{msg}</p> : null}
+      {msg ? <Banner tipo={msg.tipo}>{msg.texto}</Banner> : null}
 
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {visibles.map((item) => (

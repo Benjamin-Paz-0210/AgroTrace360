@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { AppShell } from "../components/AppShell";
+import { Banner } from "../components/Banner";
 import { CULTIVOS, type CultivoId } from "../data/agronomiaCampo";
 import { useAuth } from "../state/AuthContext";
 
@@ -104,11 +105,7 @@ export function CatalogoPage() {
         <p className="text-sm text-stone-500">{fichas.length} fichas en la base</p>
       </div>
 
-      {error ? (
-        <p className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-950/30 p-4 text-sm text-amber-100">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Banner tipo="error">{error}</Banner> : null}
 
       {loading ? (
         <p className="text-stone-400">Cargando catálogo…</p>

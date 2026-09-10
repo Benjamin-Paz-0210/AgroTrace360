@@ -18,7 +18,9 @@ import {
   veredicto,
   type Marco,
 } from "../data/densidadCampo";
+import { Banner } from "../components/Banner";
 import { useLotes } from "../hooks/useLotes";
+import { useNotice } from "../state/NoticeContext";
 
 function cultivarDeLote(raw: string): CultivoId | null {
   const c = raw.toLowerCase();
@@ -50,6 +52,7 @@ function MarcoSvg({ marco, denso }: { marco: Marco; denso: boolean }) {
 }
 
 export function DensidadPage() {
+  const { toast } = useNotice();
   const { lotes } = useLotes();
   const lote = lotes[0];
   const [cultivo, setCultivo] = useState<CultivoId>("maiz");
@@ -69,7 +72,7 @@ export function DensidadPage() {
   const [plantasCuadro, setPlantasCuadro] = useState(50);
   const [medSurco, setMedSurco] = useState(variedad?.entreSurco ?? 0.8);
   const [medPlanta, setMedPlanta] = useState(variedad?.entrePlanta ?? 0.25);
-  const [aviso, setAviso] = useState("");
+  const [aviso, setAviso] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
   const base = variedad
     ? plantasPorHa(variedad.entreSurco, variedad.entrePlanta, variedad.marco)
@@ -97,7 +100,7 @@ export function DensidadPage() {
 
   async function guardarBitacora() {
     if (!lote) return;
-    setAviso("");
+    setAviso(null);
     try {
       await api(`/api/lotes/${lote.id}/bitacora`, {
         method: "POST",
@@ -107,9 +110,12 @@ export function DensidadPage() {
           nota: `${cultivo} ${variedad?.nombre}. Ideal ${ideal.toLocaleString("es-PE")} pl/ha (${variedad?.entreSurco}×${variedad?.entrePlanta} m, ${variedad?.marco}). Medido ${actual.toLocaleString("es-PE")}. ${fallo.texto}`,
         }),
       });
-      setAviso("Quedó en tu bitácora. El acopio lo ve.");
+      setAviso({ tipo: "ok", texto: "Quedó en tu bitácora. El acopio lo ve." });
+      toast({ tipo: "ok", titulo: "Verificación guardada", texto: "El acopio ya puede verla." });
     } catch (err) {
-      setAviso(err instanceof Error ? err.message : "No se pudo guardar");
+      const texto = err instanceof Error ? err.message : "No se pudo guardar";
+      setAviso({ tipo: "error", texto });
+      toast({ tipo: "error", titulo: "No se pudo guardar", texto });
     }
   }
 
@@ -356,7 +362,11 @@ export function DensidadPage() {
               Guardar verificación en bitácora
             </button>
           ) : null}
-          {aviso ? <p className="mt-2 text-xs text-amber-100">{aviso}</p> : null}
+          {aviso ? (
+            <Banner tipo={aviso.tipo} className="mt-4 mb-0!">
+              {aviso.texto}
+            </Banner>
+          ) : null}
         </section>
       </div>
     </AppShell>

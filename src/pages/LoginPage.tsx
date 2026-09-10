@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { Link, Navigate, useParams } from "react-router-dom";
 import type { Role } from "../api/client";
+import { Banner } from "../components/Banner";
 import { Brand } from "../components/Brand";
 import { homeFor, useAuth } from "../state/AuthContext";
 
@@ -102,7 +103,11 @@ export function LoginPage() {
               className="mt-1 w-full min-h-12 rounded-xl border border-white/10 bg-[#08110c] px-3 py-3 text-white"
             />
           </label>
-          {error ? <p className="mt-3 text-sm text-amber-200">{error}</p> : null}
+          {error ? (
+            <Banner tipo="error" className="mt-4 mb-0!">
+              {error}
+            </Banner>
+          ) : null}
           <button
             type="submit"
             disabled={sending}

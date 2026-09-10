@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { Trash2 } from "lucide-react";
 import { api } from "../api/client";
 import { AppShell, SemaforoPill } from "../components/AppShell";
 import { BitacoraTimeline } from "../components/BitacoraTimeline";
 import { useFotosAcopio, useLotes, useRanking } from "../hooks/useLotes";
+import { Banner } from "../components/Banner";
+import { useNotice } from "../state/NoticeContext";
 
 export function AcopioPage() {
+  const { toast } = useNotice();
   const { ranking, loading, reload: reloadRanking } = useRanking();
   const { lotes, reload } = useLotes();
   const [aviso, setAviso] = useState("");
@@ -21,8 +25,20 @@ export function AcopioPage() {
       });
       reload();
       reloadRanking();
+      toast({
+        tipo: "ok",
+        titulo: seleccion === "seleccionado" ? "Lote seleccionado" : "Lote rechazado",
+        texto: seleccion === "seleccionado"
+          ? "Pasa a la exportadora."
+          : "No entra al contenedor.",
+      });
     } catch (err) {
       setAviso(err instanceof Error ? err.message : "No se pudo seleccionar");
+      toast({
+        tipo: "error",
+        titulo: "No se pudo decidir",
+        texto: err instanceof Error ? err.message : "Inténtalo de nuevo.",
+      });
     }
   }
 
@@ -37,7 +53,7 @@ export function AcopioPage() {
         <Kpi n={String(aptos)} l="Aptos (semáforo verde)" />
         <Kpi n={String(seleccionados)} l="Seleccionados para exportadora" />
       </div>
-      {aviso ? <p className="mb-4 text-sm text-amber-200">{aviso}</p> : null}
+      {aviso ? <Banner tipo="error">{aviso}</Banner> : null}
 
       <div className="overflow-x-auto rounded-3xl border border-white/8">
         <table className="w-full min-w-[640px] text-left text-sm">
@@ -118,7 +134,34 @@ export function AcopioPage() {
 }
 
 export function AcopioFotosPage() {
-  const { fotos, loading } = useFotosAcopio();
+  const { confirmar, toast } = useNotice();
+  const { fotos, loading, reload } = useFotosAcopio();
+  const [borrando, setBorrando] = useState<string | null>(null);
+
+  async function borrarFoto(loteId: string, fotoId: string) {
+    const ok = await confirmar({
+      titulo: "Borrar foto del lote",
+      texto: "Se quita de la evidencia de campo de este productor.",
+      ok: "Borrar",
+      cancelar: "Conservar",
+      peligro: true,
+    });
+    if (!ok) return;
+    setBorrando(fotoId);
+    try {
+      await api(`/api/lotes/${loteId}/fotos/${fotoId}`, { method: "DELETE" });
+      reload();
+      toast({ tipo: "ok", titulo: "Foto borrada", texto: "Ya no está en el lote." });
+    } catch (err) {
+      toast({
+        tipo: "error",
+        titulo: "No se pudo borrar",
+        texto: err instanceof Error ? err.message : "Inténtalo de nuevo.",
+      });
+    } finally {
+      setBorrando(null);
+    }
+  }
 
   return (
     <AppShell
@@ -147,6 +190,15 @@ export function AcopioFotosPage() {
                 <h3 className="mt-1 font-medium text-white">{foto.enfermedad}</h3>
                 {foto.causa ? <p className="mt-2 text-sm text-stone-400">{foto.causa}</p> : null}
                 <p className="mt-2 text-sm text-stone-400">{foto.tratamiento}</p>
+                <button
+                  type="button"
+                  disabled={borrando === foto.id}
+                  onClick={() => void borrarFoto(foto.loteId, foto.id)}
+                  className="mt-3 inline-flex min-h-10 items-center gap-2 rounded-full border border-white/15 px-3 py-1.5 text-xs text-stone-300 hover:border-red-400/50 hover:text-red-200 disabled:opacity-40"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  {borrando === foto.id ? "Borrando…" : "Borrar del lote"}
+                </button>
               </div>
             </article>
           ))}

@@ -4,8 +4,10 @@ import { ArrowLeft, ArrowRight, Download, Play, Presentation } from "lucide-reac
 import { Brand } from "../components/Brand";
 import { PITCH_IMGS, PITCH_SEGS, EQUIPO } from "../data/pitch";
 import { capturarLaminas, guardarPdf, guardarPpt } from "../lib/exportPitch";
+import { useNotice } from "../state/NoticeContext";
 
 export function PitchPage() {
+  const { toast } = useNotice();
   const [i, setI] = useState(0);
   const [exportando, setExportando] = useState<"pdf" | "ppt" | null>(null);
   const [paso, setPaso] = useState(0);
@@ -45,9 +47,18 @@ export function PitchPage() {
       const fotos = await capturarLaminas(n, irA, nodo, setPaso);
       if (tipo === "pdf") await guardarPdf(fotos);
       else await guardarPpt(fotos);
+      toast({
+        tipo: "ok",
+        titulo: tipo === "pdf" ? "PDF listo" : "Presentación lista",
+        texto: "El archivo se descargó.",
+      });
     } catch (err) {
       console.error(err);
-      window.alert("No se pudo generar el archivo. Recarga e inténtalo de nuevo.");
+      toast({
+        tipo: "error",
+        titulo: "No se pudo generar el archivo",
+        texto: "Recarga e inténtalo de nuevo.",
+      });
     } finally {
       setExportando(null);
     }

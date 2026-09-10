@@ -13,6 +13,7 @@ import { GuiasPage } from "./pages/GuiasPage";
 import { DensidadPage } from "./pages/DensidadPage";
 import { PitchPage } from "./pages/PitchPage";
 import { AuthProvider } from "./state/AuthContext";
+import { NoticeProvider } from "./state/NoticeContext";
 
 function AcopioFicha() {
   const { productorId } = useParams();
@@ -23,6 +24,7 @@ export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <NoticeProvider>
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/pitch" element={<PitchPage />} />
@@ -142,6 +144,7 @@ export default function App() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </NoticeProvider>
       </BrowserRouter>
     </AuthProvider>
   );

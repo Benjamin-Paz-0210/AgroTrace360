@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { api } from "../api/client";
 import { AppShell } from "../components/AppShell";
+import { Banner } from "../components/Banner";
 import { CULTIVOS, type CultivoId } from "../data/agronomiaCampo";
 import {
   FOTO_HORIZONTE,
@@ -115,23 +116,19 @@ export function GuiasPage() {
       </div>
 
       {guia.enfasis ? (
-        <p className="mb-6 rounded-2xl border border-amber-500/30 bg-amber-950/30 p-4 text-sm text-amber-100">
+        <Banner tipo="info">
           {guia.enfasis}{" "}
           <Link to="/agricultor/densidad" className="font-semibold underline-offset-4 hover:underline">
             Calcular plantas/ha →
           </Link>
-        </p>
+        </Banner>
       ) : null}
 
       <div className="mb-8 overflow-hidden rounded-3xl border border-white/8">
         <img src={guia.fotoCampo} alt={guia.nombre} className="h-56 w-full object-cover" />
       </div>
 
-      {error ? (
-        <p className="mb-6 rounded-2xl border border-amber-500/30 p-4 text-sm text-amber-100">
-          {error}
-        </p>
-      ) : null}
+      {error ? <Banner tipo="error">{error}</Banner> : null}
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="rounded-3xl border border-white/8 bg-white/3 p-6">
