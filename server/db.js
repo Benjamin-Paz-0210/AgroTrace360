@@ -81,6 +81,7 @@ export async function initSchema() {
     ALTER TABLE lotes ADD COLUMN IF NOT EXISTS acopio_id TEXT;
     ALTER TABLE lotes ADD COLUMN IF NOT EXISTS seleccion TEXT;
   `);
+  await pool.query(`ALTER TABLE fotos ADD COLUMN IF NOT EXISTS archivo BYTEA`);
 
   const existing = await get("SELECT id FROM users LIMIT 1");
   if (!existing) {

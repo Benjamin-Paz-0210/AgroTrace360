@@ -2,15 +2,19 @@ import { useState } from "react";
 
 export function ImgLote({
   src,
+  fallbackSrc,
   alt = "",
   className = "",
 }: {
   src: string;
+  fallbackSrc?: string | null;
   alt?: string;
   className?: string;
 }) {
-  const [roto, setRoto] = useState(false);
-  if (roto || !src) {
+  const [fase, setFase] = useState<"src" | "fallback" | "vacio">("src");
+  const actual = fase === "fallback" ? fallbackSrc || "" : fase === "src" ? src : "";
+
+  if (fase === "vacio" || !actual) {
     return (
       <div
         className={`grid place-items-center bg-[#0c1410] text-center text-[11px] text-stone-500 ${className}`}
@@ -19,12 +23,16 @@ export function ImgLote({
       </div>
     );
   }
+
   return (
     <img
-      src={src}
+      src={actual}
       alt={alt}
       className={className}
-      onError={() => setRoto(true)}
+      onError={() => {
+        if (fase === "src" && fallbackSrc && fallbackSrc !== src) setFase("fallback");
+        else setFase("vacio");
+      }}
     />
   );
 }

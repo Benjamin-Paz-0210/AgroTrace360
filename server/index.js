@@ -11,7 +11,6 @@ import { persistirHallazgo, reanalizarPendientes, refrescarRespuestasCatalogo } 
 import {
   compactarFoto,
   fotoCampos,
-  guardarBytes,
   hidratarArchivos,
   leerBytes,
   rutaSegura,
@@ -171,12 +170,21 @@ app.get("/uploads/:file", wrap(async (req, res, next) => {
   if (!name || name !== req.params.file) return next();
   const disk = rutaSegura(UPLOADS, name);
   if (disk && fs.existsSync(disk)) {
-    return res.sendFile(disk);
+    return res.sendFile(path.resolve(disk));
   }
   const buf = await leerBytes(name);
-  if (!buf) return next();
-  if (disk) fs.writeFileSync(disk, buf);
-  res.type("jpg").send(buf);
+  if (buf) {
+    if (disk) fs.writeFileSync(disk, buf);
+    return res.type("jpg").send(buf);
+  }
+  const meta = await get("SELECT catalogo_filename FROM fotos WHERE filename = ?", [name]);
+  const ficha = meta?.catalogo_filename
+    ? path.join(catalogoDir(), path.basename(String(meta.catalogo_filename)))
+    : null;
+  if (ficha && fs.existsSync(ficha)) {
+    return res.sendFile(path.resolve(ficha));
+  }
+  return next();
 }));
 
 app.use("/uploads", express.static(UPLOADS));
@@ -298,8 +306,8 @@ app.post(
     const id = `f-${Date.now()}`;
     await run(
       `INSERT INTO fotos
-        (id,lote_id,user_id,filename,cultivo,calidad_planta,enfermedad,confianza_enfermedad,maleza,confianza_maleza,tratamiento,created_at,tipo,causa)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        (id,lote_id,user_id,filename,cultivo,calidad_planta,enfermedad,confianza_enfermedad,maleza,confianza_maleza,tratamiento,created_at,tipo,causa,archivo)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
       id,
       lote.id,
@@ -315,10 +323,10 @@ app.post(
       new Date().toISOString(),
       hallazgo.tipo || null,
       hallazgo.causa || null,
+      packed.buffer,
     ],
     );
     await persistirHallazgo(id, hallazgo);
-    await guardarBytes(id, packed.buffer);
     const nuevaCalidad =
       hallazgo.match === "ninguno"
         ? lote.calidad_export
@@ -438,8 +446,8 @@ app.post(
     const id = `f-${Date.now()}`;
     await run(
       `INSERT INTO fotos
-        (id,lote_id,user_id,filename,cultivo,calidad_planta,enfermedad,confianza_enfermedad,maleza,confianza_maleza,tratamiento,created_at,tipo,causa)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        (id,lote_id,user_id,filename,cultivo,calidad_planta,enfermedad,confianza_enfermedad,maleza,confianza_maleza,tratamiento,created_at,tipo,causa,archivo)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
       [
         id,
         lote.id,
@@ -455,10 +463,10 @@ app.post(
         new Date().toISOString(),
         hallazgo.tipo || null,
         hallazgo.causa || null,
+        packed.buffer,
       ],
     );
     await persistirHallazgo(id, hallazgo);
-    await guardarBytes(id, packed.buffer);
     const nuevaCalidad =
       hallazgo.match === "ninguno"
         ? lote.calidad_export

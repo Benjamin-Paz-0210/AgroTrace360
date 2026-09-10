@@ -31,7 +31,7 @@ export async function compactarFoto(filePath) {
   const buffer = await sharp(filePath)
     .rotate()
     .resize(1600, 1600, { fit: "inside", withoutEnlargement: true })
-    .jpeg({ quality: 82, mozjpeg: true })
+    .jpeg({ quality: 82 })
     .toBuffer();
   fs.writeFileSync(dest, buffer);
   if (dest !== filePath && fs.existsSync(filePath)) fs.unlinkSync(filePath);
@@ -51,8 +51,10 @@ export async function leerBytes(filename) {
 
 export function rutaSegura(uploadsDir, filename) {
   if (!filename) return null;
-  const dest = path.join(uploadsDir, path.basename(String(filename)));
-  if (!dest.startsWith(uploadsDir)) return null;
+  const root = path.resolve(uploadsDir);
+  const dest = path.resolve(root, path.basename(String(filename)));
+  const prefix = root.endsWith(path.sep) ? root : root + path.sep;
+  if (dest !== root && !dest.startsWith(prefix)) return null;
   return dest;
 }
 

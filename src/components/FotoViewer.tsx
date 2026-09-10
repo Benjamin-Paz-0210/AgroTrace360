@@ -104,7 +104,12 @@ export function FotoViewer({
               touchX.current = null;
             }}
           >
-            <ImgLote src={foto.url} alt={foto.enfermedad} className="max-h-[52vh] w-full object-contain lg:max-h-[70vh]" />
+            <ImgLote
+              src={foto.url}
+              fallbackSrc={foto.fotoCatalogo}
+              alt={foto.enfermedad}
+              className="max-h-[52vh] w-full object-contain lg:max-h-[70vh]"
+            />
             {fotos.length > 1 ? (
               <>
                 <button
@@ -156,7 +161,7 @@ export function FotoViewer({
                   idx === i ? "border-amber-300" : "border-white/10 opacity-70"
                 }`}
               >
-                <ImgLote src={item.url} alt="" className="h-full w-full object-cover" />
+                <ImgLote src={item.url} fallbackSrc={item.fotoCatalogo} alt="" className="h-full w-full object-cover" />
               </button>
             ))}
           </div>
@@ -204,7 +209,7 @@ export function FotosLoteGrid({
               onClick={() => onAbrir(foto.id)}
               className="block w-full"
             >
-              <ImgLote src={foto.url} alt="" className="h-28 w-full object-cover" />
+              <ImgLote src={foto.url} fallbackSrc={foto.fotoCatalogo} alt="" className="h-28 w-full object-cover" />
             </button>
             <figcaption className="flex items-start justify-between gap-2 p-2">
               <button

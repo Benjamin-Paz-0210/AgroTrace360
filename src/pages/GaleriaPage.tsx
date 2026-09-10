@@ -129,6 +129,7 @@ export function GaleriaPage() {
             >
               <ImgLote
                 src={foto.url}
+                fallbackSrc={foto.fotoCatalogo}
                 alt={foto.enfermedad}
                 className="max-h-[62vh] w-full min-h-64 object-contain"
               />
@@ -163,7 +164,7 @@ export function GaleriaPage() {
                     idx === i ? "border-amber-300" : "border-white/10 opacity-70"
                   }`}
                 >
-                  <ImgLote src={item.url} alt="" className="h-full w-full object-cover" />
+                  <ImgLote src={item.url} fallbackSrc={item.fotoCatalogo} alt="" className="h-full w-full object-cover" />
                 </button>
               ))}
             </div>
