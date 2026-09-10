@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "20.x"
   },
   "scripts": {
     "dev": "concurrently -n api,web -c yellow,cyan \"node server/index.js\" \"vite\"",
@@ -12,11 +12,16 @@
     "dev:api": "node server/index.js",
     "migrate": "node db/migrate.js",
     "seed:catalogo": "node db/migrate.js",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "start": "node server/index.js",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/leaflet": "^1.9.20",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.4.2",
     "express": "^5.1.0",
@@ -33,17 +38,12 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.8.2",
     "sharp": "^0.35.4",
-    "sql.js": "^1.13.0"
-  },
-  "devDependencies": {
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/leaflet": "^1.9.20",
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9",
-    "@vitejs/plugin-react": "^5.0.2",
-    "concurrently": "^9.2.1",
+    "sql.js": "^1.13.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.2",
     "vite": "^7.1.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

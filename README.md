@@ -39,7 +39,7 @@ npm run migrate
 1. Sube el repo a GitHub (`https://github.com/Benjamin-Paz-0210/AgroTrace360.git`).
 2. En [Render](https://dashboard.render.com) → **New** → **Web Service** → conecta ese repo.
 3. Runtime: **Node**.
-4. Build: `npm ci && npm run build`
+4. Build: `npm install --include=dev && npm run build`
 5. Start: `npm start`
 6. Variables de entorno:
    - `NODE_ENV` = `production`
